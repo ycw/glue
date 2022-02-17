@@ -60,6 +60,10 @@ core/Object3D
 materials/Material
 renderers/WebGLRenderTarget
 textures/Texture
+
+# included heritages
+cameras/Camera                ("layers")
+materials/MeshNormalMaterial  ("fog" defaults)
 ```
 
 Wrongly parsed dts items:
@@ -71,6 +75,6 @@ renderers/shaders/UniformsUtils
 # static & instance items w/ same name creates doubles
 math/Triangle
 
-# included overrides which should not be
+# included heritages which should not be
 textures/*
 ```
