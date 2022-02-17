@@ -346,7 +346,7 @@ async function get_json_report(walk_result) {
 
 
 
-const dts_basepath = path.resolve(DTS_BASEPATH, `math`);
+const dts_basepath = path.resolve(DTS_BASEPATH, ``);
 const docs_basepath = get_path_to_docs(dts_basepath);
 const walk_result = walk(dts_basepath, docs_basepath);
 const report = await get_json_report(walk_result);
