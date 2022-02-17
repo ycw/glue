@@ -1,0 +1,30 @@
+html, body {
+  margin: 0;
+  padding: 0;
+}
+table { 
+  /* border: medium solid black; */
+  border-collapse: collapse;
+  overflow: hidden;
+}
+thead {
+  position: sticky;
+  top: 0;
+  box-shadow: 0 1px 10px #0003;
+}
+td, th {
+  background: white;
+  padding: 1rem;
+}
+td {
+  font: bold 1em monospace;
+  background: linear-gradient(transparent, #0001);
+}
+:is(th, td):first-of-type {
+  text-align: end;
+}
+ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+}

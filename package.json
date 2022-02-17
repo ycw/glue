@@ -1,0 +1,24 @@
+{
+  "name": "glue",
+  "version": "0.0.0",
+  "description": "",
+  "author": "ycw (https://github.com/ycw)",
+  "repository": {
+    "url": "https://github.com/ycw/glue"
+  },
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "serve": "wds --watch --open www/index.html",
+    "build": "node src/index.js"
+  },
+  "keywords": [],
+  "license": "ISC",
+  "dependencies": {
+    "jsdom": "^19.0.0",
+    "typescript": "^4.5.5"
+  },
+  "devDependencies": {
+    "@web/dev-server": "^0.1.29"
+  }
+}

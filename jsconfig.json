@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "moduleResolution": "node"
+  }, 
+  "files": [
+    "src/index.js"
+  ]
+}
