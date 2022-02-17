@@ -113,10 +113,9 @@ function get_dts_item(path_to_dts) {
   const deprecated_items = new Set();
   const add_deprecated_item = (node) => node.name && deprecated_items.add(node.name.escapedText);
   const push_item = (node) => node.name && item.items.push(Item(node.name.escapedText));
+  const basename = path.basename(name);
 
   ts.forEachChild(src, node => {
-
-    if (node.name) console.log(name, node.name.escapedText);
 
     if (has_deprecated_tag(src, node)) {
       add_deprecated_item(node);
@@ -124,6 +123,10 @@ function get_dts_item(path_to_dts) {
     }
 
     if (ts.isModuleDeclaration(node)) { // namespace
+      if (node.name && basename !== node.name.escapedText) {
+        return;
+      } 
+      console.log(name);
       ts.forEachChild(node, (n) => {
         n.statements?.forEach(m => {
           if (has_deprecated_tag(src, m)) {
@@ -145,6 +148,10 @@ function get_dts_item(path_to_dts) {
       ts.isClassDeclaration(node) ||
       ts.isInterfaceDeclaration(node) // LoaderUtils
     ) {
+      if (node.name && basename !== node.name.escapedText) {
+        return;
+      }
+      console.log(name);
       ts.forEachChild(node, n => {
         if (has_deprecated_tag(src, n)) {
           add_deprecated_item(n);
