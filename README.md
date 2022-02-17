@@ -46,17 +46,31 @@ ShaderChunk.d.ts
 
 ## Known Issues 
 
-```
-# exotic docs (".shadowMap.type")
-renderers/WebGLRenderer
+Wrongly parsed docs items:
 
-# wrong html tags
+```
+# exotic docs
+core/InterleavedBuffer   ("updateRange.count")
+renderers/WebGLRenderer  ("shadowMap.type")
+textures/DepthTexture    (".format")
+
+# included unrelated items due to wrong html tags
 core/BufferGeometry
 core/Object3D
 materials/Material
 renderers/WebGLRenderTarget
 textures/Texture
+```
 
-# renamed exports
+Wrongly parsed dts items:
+
+```
+# alias is ignored in renamed exports
 renderers/shaders/UniformsUtils
+
+# static & instance items w/ same name creates doubles
+math/Triangle
+
+# included overrides which should not be
+textures/*
 ```
