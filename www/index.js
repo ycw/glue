@@ -1,6 +1,25 @@
 const result = await fetch('./a.json').then(r => r.json());
 
+
+const render_missing_doc_item = ({
+  name,
+  path_to_dts
+}) => {
+  return `
+<tr>
+  <td>
+    ${name}<br>
+    <a href='../${path_to_dts}' data-open='${name}'>dts</a>
+    <a>docs(missing)</a>
+  </td>
+  <td>(all)</td>
+  <td></td>
+</tr>
+`;
+}
+
 const render_item = ({
+  err,
   name,
   undoc_items,
   unty_items,
@@ -30,13 +49,25 @@ const render_item = ({
 
 
 const render = (result) => {
-  const el_body = document.querySelector('tbody');
-  el_body.innerHTML = result.report.map(render_item).join('');
+  const el_threejs_ver = document.querySelector('#threejs_ver');
+  el_threejs_ver.textContent = result.threejs_ver;
 
-  const el = document.querySelector('thead tr');
-  el.children[0].textContent += ` (${result.n_dts}) `;
-  el.children[1].textContent += ` (${result.n_undoc}) `;
-  el.children[2].textContent += ` (${result.n_unty}) `;
+  const el_threejs_hash = document.querySelector('#threejs_hash');
+  el_threejs_hash.textContent = result.threejs_hash;
+
+  const el_threetstypes_hash = document.querySelector('#threetstypes_hash');
+  el_threetstypes_hash.textContent = result.threetstypes_hash;
+
+  document.querySelector('#n_missing_docs').textContent = result.missing_docs.length;
+  document.querySelector('#n_dts').textContent = result.records.length;
+  document.querySelector('#n_undoc').textContent = result.n_undoc;
+  document.querySelector('#n_unty').textContent = result.n_unty;
+
+  const el_body = document.querySelector('tbody');
+  el_body.innerHTML = [
+    result.records.map(render_item).join(''),
+    result.missing_docs.map(render_missing_doc_item).join('')
+  ].join('');
 
   el_body.addEventListener('click', async ev => {
     if ('open' in ev.target.dataset) {
@@ -48,7 +79,7 @@ const render = (result) => {
     }
   });
 
-  document.title = `Report ${result.threejs_rev}`;
+  document.title = `Report ${result.threejs_ver}`;
 };
 
 

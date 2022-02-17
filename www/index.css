@@ -1,9 +1,15 @@
 html, body {
   margin: 0;
-  padding: 0;
+  padding: 1rem;
+}
+.details {
+  font: 1em monospace;
+  width: 50vw;
+  display: grid;
+  grid-template-columns: auto 1fr;
 }
 table { 
-  /* border: medium solid black; */
+  border: medium solid black;
   border-collapse: collapse;
   overflow: hidden;
 }

@@ -2,6 +2,7 @@ import fs from 'fs';
 import ts from 'typescript';
 import { JSDOM } from 'jsdom';
 import { posix } from 'path';
+import { gitToJs } from 'git-parse';
 
 const path = posix;
 
@@ -41,6 +42,7 @@ function is_dts_missing_docs(path_to_dts) {
     'WebXR.d.ts',
     'WebXRController.d.ts',
     'ShaderChunk.d.ts', // has placeholder .html thu
+    'DataTexture2DArray.d.ts'
   ].indexOf(path.basename(path_to_dts)))
     return true;
 }
@@ -125,7 +127,7 @@ function get_dts_item(path_to_dts) {
     if (ts.isModuleDeclaration(node)) { // namespace
       if (node.name && basename !== node.name.escapedText) {
         return;
-      } 
+      }
       console.log(name);
       ts.forEachChild(node, (n) => {
         n.statements?.forEach(m => {
@@ -160,7 +162,7 @@ function get_dts_item(path_to_dts) {
         if (
           ts.isMethodDeclaration(n) ||
           ts.isPropertyDeclaration(n) ||
-          ts.isFunctionDeclaration(n) || 
+          ts.isFunctionDeclaration(n) ||
           ts.isMethodSignature(n) // interface -> fn
         ) {
           push_item(n);
@@ -175,7 +177,7 @@ function get_dts_item(path_to_dts) {
 
 
 
-function get_doc_item(path_to_docs) {
+function get_docs_item(path_to_docs) {
   const html = fs.readFileSync(path_to_docs, { encoding: 'utf-8' });
   const doc = new JSDOM(html).window.document;
   const name = get_canonical_name(path_to_docs);
@@ -198,10 +200,40 @@ function get_doc_item(path_to_docs) {
 
 function get_diff(path_to_dts, path_to_docs) {
   const dts_item = get_dts_item(path_to_dts);
-  const docs_item = get_doc_item(path_to_docs);
+  const docs_item = get_docs_item(path_to_docs);
   const undoc_items = dts_item.items.filter(x => docs_item.items.indexOf(x) === -1);
   const unty_items = docs_item.items.filter(x => dts_item.items.indexOf(x) === -1);
   return { undoc_items, unty_items };
+}
+
+
+
+function WalkMissingDocsErr({
+  name,
+  path_to_dts,
+  path_to_docs,
+}) {
+  return {
+    err: 'missing_docs',
+    name,
+    path_to_dts,
+    path_to_docs
+  };
+}
+
+function WalkOk({
+  name,
+  diff,
+  path_to_dts,
+  path_to_docs
+}) {
+  return {
+    name,
+    undoc_items: diff.undoc_items,
+    unty_items: diff.unty_items,
+    path_to_dts,
+    path_to_docs
+  };
 }
 
 
@@ -214,16 +246,29 @@ function walk(dts_basepath, docs_basepath, result = []) {
     if (fs.statSync(path_to_dts).isDirectory()) {
       walk(path_to_dts, path_to_docs, result);
     } else {
-      if (is_dts_excluded(path_to_dts)) continue;
-      if (is_dts_missing_docs(path_to_dts)) continue;
-      const { unty_items, undoc_items } = get_diff(path_to_dts, path_to_docs);
-      result.push({
-        name: get_canonical_name(path_to_dts),
-        undoc_items,
-        unty_items,
-        path_to_dts: path.relative('.', path_to_dts),
-        path_to_docs: path.relative('.', path_to_docs),
-      });
+      if (is_dts_excluded(path_to_dts)) {
+        continue;
+      } else {
+        const name = get_canonical_name(path_to_dts);
+        const relpath_to_dts = path.relative('.', path_to_dts);
+        const relpath_to_docs = path.relative('.', path_to_docs);
+
+        if (!fs.existsSync(path_to_docs)) {
+          result.push(WalkMissingDocsErr({ 
+            name, 
+            path_to_dts: relpath_to_dts, 
+            path_to_docs: relpath_to_docs
+          }));
+          continue;
+        }
+
+        result.push(WalkOk({ 
+          name, 
+          path_to_dts: relpath_to_dts, 
+          path_to_docs: relpath_to_docs, 
+          diff: get_diff(path_to_dts, path_to_docs) 
+        }));
+      }
     }
   }
   return result;
@@ -231,8 +276,36 @@ function walk(dts_basepath, docs_basepath, result = []) {
 
 
 
-function get_json_report(walk_result) {
-  return walk_result.filter(x => x.undoc_items.length || x.unty_items.length);
+async function get_json_report(walk_result) {
+  const result = walk_result.filter(x => {
+    if (x.err) return true;
+    if (x.undoc_items.length || x.unty_items.length) return true;
+  });
+
+  const missing_docs = result
+    .filter(x => x.err === 'missing_docs')
+    .map(({name, path_to_dts}) => ({ name, path_to_dts }));
+
+  const records = result.filter(x => !x.err);
+  const n_undoc = records.reduce((o, x) => o + x.undoc_items.length, 0);
+  const n_unty = records.reduce((o, x) => o + x.unty_items.length, 0);
+
+  const threejs_ver = JSON.parse(
+    fs.readFileSync('datafile/three.js/package.json')
+  ).version;
+
+  const [threejs_head] = await gitToJs('datafile/three.js');
+  const [threetstypes_head] = await gitToJs('datafile/three-ts-types');
+
+  return {
+    threejs_ver,
+    threejs_hash: threejs_head.hash,
+    threetstypes_hash: threetstypes_head.hash,
+    missing_docs, // no .html for .d.ts
+    records, // undocumented and/or untyped
+    n_undoc, // count
+    n_unty // count
+  };
 }
 
 
@@ -240,17 +313,5 @@ function get_json_report(walk_result) {
 const dts_basepath = path.resolve(DTS_BASEPATH, ``);
 const docs_basepath = get_path_to_docs(dts_basepath);
 const walk_result = walk(dts_basepath, docs_basepath);
-const report = get_json_report(walk_result);
-const threejs_rev = JSON.parse(fs.readFileSync('datafile/three.js/package.json')).version;
-const n_dts = report.length;
-const n_undoc = report.reduce((o, r) => o + r.undoc_items.length, 0);
-const n_unty = report.reduce((o, r) => o + r.unty_items.length, 0);
-const result = {
-  threejs_rev,
-  n_dts,
-  n_undoc,
-  n_unty,
-  report
-};
-fs.writeFileSync('www/a.json', JSON.stringify(result));
-
+const report = await get_json_report(walk_result);
+fs.writeFileSync('www/a.json', JSON.stringify(report));
