@@ -84,8 +84,8 @@ function DocsItem(name, items = []) {
   return { type: 'docs', name, items };
 }
 
-function Item(name) {
-  return name;
+function Item(name, is_static) {
+  return { name, is_static };
 }
 
 
@@ -106,21 +106,42 @@ function has_deprecated_tag(src, node) {
 }
 
 
+/**
+ * 
+ * @param {ts.Node} node 
+ */
+function has_static_mod(node) {
+  return node.modifiers?.some(x => x.kind === ts.SyntaxKind.StaticKeyword);
+}
+
+
 
 function get_dts_item(path_to_dts) {
   const prog = ts.createProgram([path_to_dts], {});
   const src = prog.getSourceFile(path_to_dts);
   const name = get_canonical_name(path_to_dts);
   const item = DtsItem(name);
-  const deprecated_items = new Set();
-  const add_deprecated_item = (node) => node.name && deprecated_items.add(node.name.escapedText);
-  const push_item = (node) => node.name && item.items.push(Item(node.name.escapedText));
+  const deprecated_items = [];
+  const push_deprecated_item = (node) => {
+    if (node.name) {
+      const name = node.name.escapedText;
+      const is_static = has_static_mod(node);
+      deprecated_items.push(Item(name, is_static));
+    }
+  };
+  const push_item = (node) => {
+    if (node.name) {
+      const name = node.name.escapedText;
+      const is_static = has_static_mod(node);
+      item.items.push(Item(name, is_static));
+    }
+  };
   const basename = path.basename(name);
 
   ts.forEachChild(src, node => {
 
     if (has_deprecated_tag(src, node)) {
-      add_deprecated_item(node);
+      push_deprecated_item(node);
       return;
     }
 
@@ -132,7 +153,7 @@ function get_dts_item(path_to_dts) {
       ts.forEachChild(node, (n) => {
         n.statements?.forEach(m => {
           if (has_deprecated_tag(src, m)) {
-            add_deprecated_item(m);
+            push_deprecated_item(m);
             return;
           }
           push_item(m);
@@ -156,7 +177,7 @@ function get_dts_item(path_to_dts) {
       console.log(name);
       ts.forEachChild(node, n => {
         if (has_deprecated_tag(src, n)) {
-          add_deprecated_item(n);
+          push_deprecated_item(n);
           return;
         }
         if (
@@ -171,7 +192,15 @@ function get_dts_item(path_to_dts) {
       return;
     }
   });
-  item.items = item.items.filter(x => !deprecated_items.has(x));
+
+  // rm @deprecated overloading fns manually. 
+  // (!) leading comments belong to the 1st fn decl only
+  // (!) must distinguish static from instance (math/Quaternion .slerp) 
+  item.items = item.items.filter(x =>
+    !deprecated_items.some(y =>
+      y.name === x.name && y.is_static === x.is_static 
+    )
+  );
   return item;
 }
 
@@ -201,8 +230,15 @@ function get_docs_item(path_to_docs) {
 function get_diff(path_to_dts, path_to_docs) {
   const dts_item = get_dts_item(path_to_dts);
   const docs_item = get_docs_item(path_to_docs);
-  const undoc_items = dts_item.items.filter(x => docs_item.items.indexOf(x) === -1);
-  const unty_items = docs_item.items.filter(x => dts_item.items.indexOf(x) === -1);
+
+  const undoc_items = dts_item.items.filter(x =>
+    !docs_item.items.some(y => y.name === x.name)
+  ).map(({ name }) => name);
+
+  const unty_items = docs_item.items.filter(x =>
+    !dts_item.items.some(y => y.name === x.name)
+  ).map(({ name }) => name);
+
   return { undoc_items, unty_items };
 }
 
@@ -254,19 +290,19 @@ function walk(dts_basepath, docs_basepath, result = []) {
         const relpath_to_docs = path.relative('.', path_to_docs);
 
         if (!fs.existsSync(path_to_docs)) {
-          result.push(WalkMissingDocsErr({ 
-            name, 
-            path_to_dts: relpath_to_dts, 
+          result.push(WalkMissingDocsErr({
+            name,
+            path_to_dts: relpath_to_dts,
             path_to_docs: relpath_to_docs
           }));
           continue;
         }
 
-        result.push(WalkOk({ 
-          name, 
-          path_to_dts: relpath_to_dts, 
-          path_to_docs: relpath_to_docs, 
-          diff: get_diff(path_to_dts, path_to_docs) 
+        result.push(WalkOk({
+          name,
+          path_to_dts: relpath_to_dts,
+          path_to_docs: relpath_to_docs,
+          diff: get_diff(path_to_dts, path_to_docs)
         }));
       }
     }
@@ -284,7 +320,7 @@ async function get_json_report(walk_result) {
 
   const missing_docs = result
     .filter(x => x.err === 'missing_docs')
-    .map(({name, path_to_dts}) => ({ name, path_to_dts }));
+    .map(({ name, path_to_dts }) => ({ name, path_to_dts }));
 
   const records = result.filter(x => !x.err);
   const n_undoc = records.reduce((o, x) => o + x.undoc_items.length, 0);
@@ -310,7 +346,7 @@ async function get_json_report(walk_result) {
 
 
 
-const dts_basepath = path.resolve(DTS_BASEPATH, ``);
+const dts_basepath = path.resolve(DTS_BASEPATH, `math`);
 const docs_basepath = get_path_to_docs(dts_basepath);
 const walk_result = walk(dts_basepath, docs_basepath);
 const report = await get_json_report(walk_result);

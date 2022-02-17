@@ -72,8 +72,9 @@ Wrongly parsed dts items:
 # alias is ignored in renamed exports
 renderers/shaders/UniformsUtils
 
-# static & instance items w/ same name creates doubles
-math/Triangle
+# static items & instance items w/ same name creates doubles
+math/Triangle     ("getUV")
+math/Quaternion   ("slerp")
 
 # included heritages which should not be
 textures/*
