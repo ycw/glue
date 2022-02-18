@@ -55,11 +55,11 @@ renderers/WebGLRenderer  ("shadowMap.type")
 textures/DepthTexture    (".format")
 
 # included unrelated items due to wrong html tags
-core/BufferGeometry
-core/Object3D
-materials/Material
-renderers/WebGLRenderTarget
-textures/Texture
+core/BufferGeometry      (solved)
+core/Object3D            (solved)
+materials/Material       (solved)
+renderers/WebGLRenderTarget  (solved)
+textures/Texture         (solved)
 
 # included heritages
 cameras/Camera                ("layers")
