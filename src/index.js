@@ -151,25 +151,42 @@ function get_dts_item(path_to_dts) {
       }
       console.log(name);
       ts.forEachChild(node, (n) => {
-        n.statements?.forEach(m => {
-          if (has_deprecated_tag(src, m)) {
-            push_deprecated_item(m);
+        n.statements?.forEach(stmt => {
+          if (stmt.kind === ts.SyntaxKind.ExportDeclaration) { // export
+            stmt.exportClause.elements.forEach(exp_spec => {
+              const old = exp_spec.propertyName.escapedText; 
+              const nu = exp_spec.name.escapedText;
+              const the_item = item.items.find(x => x.name === old);
+              if (the_item) {
+                the_item.name = nu;
+              } else {
+                push_item(Item(nu));
+              }
+            });
             return;
           }
-          push_item(m);
+          if (has_deprecated_tag(src, stmt)) {
+            push_deprecated_item(stmt);
+            return;
+          }
+          push_item(stmt);
         });
       });
       return;
     }
 
     if (ts.isFunctionDeclaration(node)) {
+      if (has_deprecated_tag(src, node)) {
+        push_deprecated_item(node);
+        return;
+      }
       push_item(node);
       return;
     }
 
     if (
       ts.isClassDeclaration(node) ||
-      ts.isInterfaceDeclaration(node) // LoaderUtils
+      ts.isInterfaceDeclaration(node)
     ) {
       if (node.name && basename !== node.name.escapedText) {
         return;
@@ -201,6 +218,21 @@ function get_dts_item(path_to_dts) {
       y.name === x.name && y.is_static === x.is_static
     )
   );
+
+  // src.statements.forEach(stmt => {
+  //   console.log('src statemnts', stmt.kind)
+  //   if (stmt.kind === ts.SyntaxKind.ExportDeclaration) {
+
+  //     stmt.exportClause.elements.forEach(exp_spec => {
+  //       const old = exp_spec.properName.escapedText;
+  //       const nu = exp_spec.name.escapedText;
+  //       const the_item = item.items.find(x => x.name === old);
+  //       if (the_item) {
+  //         the_item.name = nu;
+  //       }
+  //     });
+  //   }
+  // });
   return item;
 }
 

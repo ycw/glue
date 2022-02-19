@@ -69,8 +69,8 @@ cameras/Camera    ("layers") should not be an docs item
 ### Wrongly parsed dts items:
 
 ```
-# alias is ignored in renamed exports
-renderers/shaders/UniformsUtils
+# export specifier is ignored in namespcae
+renderers/shaders/UniformsUtils   #solved
 
 # static items & instance items w/ same name creates doubles
 math/Triangle     ("getUV")   #solved
