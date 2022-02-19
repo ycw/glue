@@ -46,7 +46,7 @@ ShaderChunk.d.ts
 
 ## Known Issues 
 
-Wrongly parsed docs items:
+### Wrongly parsed docs items:
 
 ```
 # exotic docs
@@ -55,27 +55,60 @@ renderers/WebGLRenderer  ("shadowMap.type")
 textures/DepthTexture    (".format")
 
 # included unrelated items due to wrong html tags
-core/BufferGeometry      (solved)
-core/Object3D            (solved)
-materials/Material       (solved)
-renderers/WebGLRenderTarget  (solved)
-textures/Texture         (solved)
+core/BufferGeometry          #solved
+core/Object3D                #solved
+materials/Material           #solved
+renderers/WebGLRenderTarget  #solved
+textures/Texture             #solved
 
-# included heritages
-cameras/Camera                ("layers")
-materials/MeshNormalMaterial  ("fog" defaults)
+# included non-override heritages
+cameras/Camera    ("layers") should not be an docs item
 ```
 
-Wrongly parsed dts items:
+---
+### Wrongly parsed dts items:
 
 ```
 # alias is ignored in renamed exports
 renderers/shaders/UniformsUtils
 
 # static items & instance items w/ same name creates doubles
-math/Triangle     ("getUV")
-math/Quaternion   ("slerp")
+math/Triangle     ("getUV")   #solved
+math/Quaternion   ("slerp")   #solved
+```
 
-# included heritages which should not be
-textures/*
+---
+### Missing .d.ts is ignored:
+
+(should track three-ts-types "Issue" instead)
+
+---
+### Some overrided items are undocumented in docs:
+
+(three.js) should docs override items which changed default values.
+
+```
+# materials/ShadowMaterial
+color 
+
+# materials/SpriteMaterial
+transparent
+
+# textures/CubeTexture
+flipY
+
+# textures/DataTexture
+flipY
+generateMipmaps
+unpackAlignment
+
+# textures/VideoTexture
+generateMipmaps
+```
+
+(three.js) shouldn't docs override items which changed impl only:
+
+```
+# extras/core/CurvePath
+getPoint
 ```
