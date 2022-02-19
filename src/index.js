@@ -61,7 +61,7 @@ function get_path_to_docs(path_to_dts) {
 
   const k = path.basename(path_to_dts);               // LightShadow.d.ts
   const p = path.relative(DTS_BASEPATH, path_to_dts); // lights/LightShadow.d.ts
-  const q = p.replace(k, map[k] || k);                // lights/shadows/LightShadow.d.ts 
+  const q = p.replace(k, map[k] || k);                // lights/shadows/LightShadow.html
   return path.resolve(DOCS_BASEPATH, q).replace('.d.ts', '.html');
 }
 
@@ -198,7 +198,7 @@ function get_dts_item(path_to_dts) {
   // (!) must distinguish static from instance (math/Quaternion .slerp) 
   item.items = item.items.filter(x =>
     !deprecated_items.some(y =>
-      y.name === x.name && y.is_static === x.is_static 
+      y.name === x.name && y.is_static === x.is_static
     )
   );
   return item;
