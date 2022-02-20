@@ -36,19 +36,6 @@ function is_dts_excluded(path_to_dts) {
 
 
 
-function is_dts_missing_docs(path_to_dts) {
-  if (~[
-    'WebGLMultisampleRenderTarget.d.ts',
-    'WebXR.d.ts',
-    'WebXRController.d.ts',
-    'ShaderChunk.d.ts', // has placeholder .html thu
-    'DataTexture2DArray.d.ts'
-  ].indexOf(path.basename(path_to_dts)))
-    return true;
-}
-
-
-
 function get_path_to_docs(path_to_dts) {
   const map = {
     'DirectionalLightShadow.d.ts': 'shadows/DirectionalLightShadow.html',
@@ -218,21 +205,6 @@ function get_dts_item(path_to_dts) {
       y.name === x.name && y.is_static === x.is_static
     )
   );
-
-  // src.statements.forEach(stmt => {
-  //   console.log('src statemnts', stmt.kind)
-  //   if (stmt.kind === ts.SyntaxKind.ExportDeclaration) {
-
-  //     stmt.exportClause.elements.forEach(exp_spec => {
-  //       const old = exp_spec.properName.escapedText;
-  //       const nu = exp_spec.name.escapedText;
-  //       const the_item = item.items.find(x => x.name === old);
-  //       if (the_item) {
-  //         the_item.name = nu;
-  //       }
-  //     });
-  //   }
-  // });
   return item;
 }
 
