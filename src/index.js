@@ -4,6 +4,8 @@ import { JSDOM } from 'jsdom';
 import { posix } from 'path';
 import { gitToJs } from 'git-parse';
 
+import { EXCLUDED_DTS, ROUTE_TO_DOCS } from './report_config.js';
+
 const path = posix;
 
 
@@ -14,42 +16,15 @@ const DOCS_BASEPATH = 'datafile/three.js/docs/api/en/';
 
 
 function is_dts_excluded(path_to_dts) {
-  const basename = path.basename(path_to_dts);
-
-  if (~[
-    'constants.d.ts',
-    'Three.d.ts',
-    'Three.Legacy.d.ts',
-    'utils.d.ts',
-    'Curves.d.ts', // catalog; full coveraged by other .d.ts
-    'Geometries.d.ts', // ditto
-    'Materials.d.ts', // ditto
-  ].indexOf(basename))
-    return true;
-
-  if (basename == 'WebGLProgram.d.ts')
-    return false;
-
-  if (new RegExp(`renderers${path.sep}webgl`).test(path_to_dts))
-    return true;
+  return ~EXCLUDED_DTS.indexOf(path.relative(DTS_BASEPATH, path_to_dts));
 }
 
 
 
 function get_path_to_docs(path_to_dts) {
-  const map = {
-    'DirectionalLightShadow.d.ts': 'shadows/DirectionalLightShadow.html',
-    'LightShadow.d.ts': 'shadows/LightShadow.html',
-    'PointLightShadow.d.ts': 'shadows/PointLightShadow.html',
-    'SpotLightShadow.d.ts': 'shadows/SpotLightShadow.html',
-    'LoadingManager.d.ts': 'managers/LoadingManager.html',
-    'DefaultLoadingManager.d.ts': 'managers/DefaultLoadingManager.html',
-  };
-
-  const k = path.basename(path_to_dts);               // LightShadow.d.ts
-  const p = path.relative(DTS_BASEPATH, path_to_dts); // lights/LightShadow.d.ts
-  const q = p.replace(k, map[k] || k);                // lights/shadows/LightShadow.html
-  return path.resolve(DOCS_BASEPATH, q).replace('.d.ts', '.html');
+  const p = path.relative(DTS_BASEPATH, path_to_dts);
+  return path.resolve(DOCS_BASEPATH,
+    ROUTE_TO_DOCS[p] || p).replace('.d.ts', '.html');
 }
 
 
@@ -242,7 +217,7 @@ function WalkMissingDocsErr({
   path_to_docs,
 }) {
   return {
-    err: 'missing_docs',
+    is_missing_docs: true,
     name,
     path_to_dts,
     path_to_docs
@@ -256,9 +231,23 @@ function WalkOk({
   path_to_docs
 }) {
   return {
+    is_ok: true,
     name,
     undoc_items: diff.undoc_items,
     unty_items: diff.unty_items,
+    path_to_dts,
+    path_to_docs
+  };
+}
+
+function WalkExcludedDts({
+  name,
+  path_to_dts,
+  path_to_docs
+}) {
+  return {
+    is_excluded_dts: true,
+    name,
     path_to_dts,
     path_to_docs
   };
@@ -273,30 +262,24 @@ function walk(dts_basepath, docs_basepath, result = []) {
     const path_to_docs = get_path_to_docs(path_to_dts);
     if (fs.statSync(path_to_dts).isDirectory()) {
       walk(path_to_dts, path_to_docs, result);
+      continue;
+    }
+
+    const o = {
+      name: get_canonical_name(path_to_dts),
+      path_to_dts: path.relative('.', path_to_dts),
+      path_to_docs: path.relative('.', path_to_docs)
+    };
+
+    if (is_dts_excluded(path_to_dts)) {
+      result.push(WalkExcludedDts(o));
+    } else if (!fs.existsSync(path_to_docs)) {
+      result.push(WalkMissingDocsErr(o));
     } else {
-      if (is_dts_excluded(path_to_dts)) {
-        continue;
-      } else {
-        const name = get_canonical_name(path_to_dts);
-        const relpath_to_dts = path.relative('.', path_to_dts);
-        const relpath_to_docs = path.relative('.', path_to_docs);
-
-        if (!fs.existsSync(path_to_docs)) {
-          result.push(WalkMissingDocsErr({
-            name,
-            path_to_dts: relpath_to_dts,
-            path_to_docs: relpath_to_docs
-          }));
-          continue;
-        }
-
-        result.push(WalkOk({
-          name,
-          path_to_dts: relpath_to_dts,
-          path_to_docs: relpath_to_docs,
-          diff: get_diff(path_to_dts, path_to_docs)
-        }));
-      }
+      result.push(WalkOk({
+        ...o,
+        diff: get_diff(path_to_dts, path_to_docs)
+      }));
     }
   }
   return result;
@@ -306,33 +289,34 @@ function walk(dts_basepath, docs_basepath, result = []) {
 
 async function get_json_report(walk_result) {
   const result = walk_result.filter(x => {
-    if (x.err) return true;
-    if (x.undoc_items.length || x.unty_items.length) return true;
+    if (x.is_missing_docs) return true;
+    if (x.is_excluded_dts) return true;
+    if (x.is_ok && (x.undoc_items.length || x.unty_items.length)) return true;
   });
 
   const missing_docs = result
-    .filter(x => x.err === 'missing_docs')
+    .filter(x => x.is_missing_docs)
     .map(({ name, path_to_dts }) => ({ name, path_to_dts }));
 
-  const records = result.filter(x => !x.err);
+  const excluded_dts = result
+    .filter(x => x.is_excluded_dts)
+    .map(({ name, path_to_dts }) => ({ name, path_to_dts }));
+
+  const records = result.filter(x => x.is_ok);
   const n_undoc = records.reduce((o, x) => o + x.undoc_items.length, 0);
   const n_unty = records.reduce((o, x) => o + x.unty_items.length, 0);
-
-  const threejs_ver = JSON.parse(
-    fs.readFileSync('datafile/three.js/package.json')
-  ).version;
 
   const [threejs_head] = await gitToJs('datafile/three.js');
   const [threetstypes_head] = await gitToJs('datafile/three-ts-types');
 
   return {
-    threejs_ver,
     threejs_hash: threejs_head.hash,
     threetstypes_hash: threetstypes_head.hash,
-    missing_docs, // no .html for .d.ts
-    records, // undocumented and/or untyped
-    n_undoc, // count
-    n_unty // count
+    missing_docs,
+    excluded_dts,
+    records, 
+    n_undoc,
+    n_unty
   };
 }
 
