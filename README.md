@@ -2,6 +2,8 @@
 
 <https://ycw.github.io/glue/www/>
 
+
+
 ## Build 
 
 ```
@@ -25,96 +27,35 @@
 ```
 
 
+
 ## Excluded Files
 
-```
-constants.d.ts
-Three.d.ts
-Three.Legacy.d.ts
-utils.d.ts
-
-# index
-Curves.d.ts
-Geometries.d.ts
-Materials.d.ts
-
-# missing .html
-WebGLMultisampleRenderTarget.d.ts
-WebXR.d.ts
-WebXRController.d.ts
-renderers/webgl/*.d.ts # except WebGLProgram.d.ts
-
-# empty .html
-ShaderChunk.d.ts
-```
+(see `EXCLUDED_DTS` in [report_config.js](https://github.com/ycw/glue/blob/main/src/report_config.js))
 
 
 
 ## Known Issues 
 
-### Wrongly parsed docs items:
+- Missing .d.ts are Ignored
+  - track three-ts-types issues instead
+- exotic docs - sparse [#23532](https://github.com/mrdoob/three.js/pull/23532)
+  - core/InterleavedBuffer `updateRange.count` etc
+  - renderers/WebGLRenderer  `shadowMap.type` etc
+- exotic docs - dot prefix [#23529](https://github.com/mrdoob/three.js/pull/23529) 
+  - textures/DepthTexture `.format` etc
+- exotic docs - non-override heritages
+  - cameras/Camera `layers` etc
 
-```
-# exotic docs
-core/InterleavedBuffer   ("updateRange.count")
-renderers/WebGLRenderer  ("shadowMap.type")
-textures/DepthTexture    (".format")
 
-# included unrelated items due to wrong html tags
-core/BufferGeometry          #solved
-core/Object3D                #solved
-materials/Material           #solved
-renderers/WebGLRenderTarget  #solved
-textures/Texture             #solved
 
-# included non-override heritages
-cameras/Camera    ("layers") should not be an docs item
-```
+## Solved Issues
 
----
-### Wrongly parsed dts items:
-
-```
-# export specifier is ignored in namespcae
-renderers/shaders/UniformsUtils   #solved
-
-# static items & instance items w/ same name creates doubles
-math/Triangle     ("getUV")   #solved
-math/Quaternion   ("slerp")   #solved
-```
-
----
-### Missing .d.ts is ignored:
-
-(should track three-ts-types "Issue" instead)
-
----
-### Some overrided items are undocumented in docs:
-
-(three.js) should docs override items which changed default values.
-
-```
-# materials/ShadowMaterial
-color 
-
-# materials/SpriteMaterial
-transparent
-
-# textures/CubeTexture
-flipY
-
-# textures/DataTexture
-flipY
-generateMipmaps
-unpackAlignment
-
-# textures/VideoTexture
-generateMipmaps
-```
-
-(three.js) shouldn't docs override items which changed impl only:
-
-```
-# extras/core/CurvePath
-getPoint
-```
+- unrelated items are included 
+  [#23522](https://github.com/mrdoob/three.js/pull/23522)
+- override items are undoc
+  [#23536](https://github.com/mrdoob/three.js/issues/23536)
+- statics and insts are indistinguishable
+  - math/Triangle `getUV` etc
+  - math/Quaternion `slerp`
+- named export specifiers are ignored
+  - renderers/shaders/UniformsUtils
