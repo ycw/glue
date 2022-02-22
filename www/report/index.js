@@ -14,8 +14,8 @@ const render_item = ({
 <tr>
   <td>
     ${name}<br>
-    <a href='../${path_to_dts}' data-open='${name}'>dts</a>
-    <a href='../${path_to_docs}'>docs</a>
+    <a href='../../${path_to_dts}' data-open='${name}'>dts</a>
+    <a href='../../${path_to_docs}'>docs</a>
   </td>
   <td>${undoc_items.join('\n')}</td>
   <td>${unty_items.join('\n')}</td>
