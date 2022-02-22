@@ -1,0 +1,27 @@
+.details {
+  font: 1em monospace;
+  width: 50vw;
+  display: grid;
+  grid-template-columns: auto 1fr;
+}
+.details dd {
+  padding: 0;
+  margin: 0;
+}
+.details dd section {
+  white-space: pre;
+}
+table {
+  outline: thin solid #eee;
+  overflow: hidden;
+  table-layout: fixed;
+}
+td, th {
+  background: white;
+  padding: 1rem;
+  outline: thin solid #eee;
+  font: 1em monospace;
+}
+td:not(:first-of-type) {
+  white-space: pre;
+}
