@@ -10,7 +10,9 @@
 > cd datafile
 > git clone --depth=1 https://github.com/mrdoob/three.js.git
 > git clone https://github.com/three-types/three-ts-types.git
-> cd ..
+> cd three-ts-types
+> git checkout dev
+> cd ../..
 
 # Install deps
 > npm i
