@@ -38,13 +38,16 @@
 
 - Missing .d.ts are Ignored
   - track three-ts-types issues instead
-- exotic docs - sparse [#23532](https://github.com/mrdoob/three.js/pull/23532)
+- Exotic docs - sparse [#23532](https://github.com/mrdoob/three.js/pull/23532)
   - core/InterleavedBuffer `updateRange.count` etc
   - renderers/WebGLRenderer  `shadowMap.type` etc
-- exotic docs - dot prefix [#23529](https://github.com/mrdoob/three.js/pull/23529) 
+- Exotic docs - dot prefix [#23529](https://github.com/mrdoob/three.js/pull/23529) 
   - textures/DepthTexture `.format` etc
-- exotic docs - non-override heritages
+- Exotic docs - non-override heritages
   - cameras/Camera `layers` etc
+- Type tags are undoc 
+  - `is*` [#23527](https://github.com/mrdoob/three.js/issues/23527)
+  - `type` (?)
 
 
 
