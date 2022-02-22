@@ -79,22 +79,6 @@ function Item(name, is_static) {
 
 /**
  * 
- * @param {ts.SourceFile} src 
- * @param {ts.Node} node 
- */
-function has_deprecated_tag(src, node) {
-  const t = src.text;
-  const rs = ts.getLeadingCommentRanges(t, node.getFullStart());
-  return rs?.some(r => {
-    if (r.kind === ts.SyntaxKind.MultiLineCommentTrivia) {
-      return /@deprecated/m.test(t.substring(r.pos, r.end));
-    }
-  });
-}
-
-
-/**
- * 
  * @param {ts.Node} node 
  */
 function has_static_mod(node) {
@@ -104,9 +88,14 @@ function has_static_mod(node) {
 
 
 function get_dts_item(path_to_dts) {
-  const prog = ts.createProgram([path_to_dts], {});
-  const src = prog.getSourceFile(path_to_dts);
   const name = get_canonical_name(path_to_dts);
+  const src = ts.createSourceFile(
+    `${name}.d.ts`,
+    fs.readFileSync(path_to_dts, { encoding: 'utf-8' }),
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS
+  );
   const item = DtsItem(name);
   const deprecated_items = [];
   const push_deprecated_item = (node) => {
@@ -126,8 +115,7 @@ function get_dts_item(path_to_dts) {
   const basename = path.basename(name);
 
   ts.forEachChild(src, node => {
-
-    if (has_deprecated_tag(src, node)) {
+    if (ts.getJSDocDeprecatedTag(node)) {
       push_deprecated_item(node);
       return;
     }
@@ -141,7 +129,7 @@ function get_dts_item(path_to_dts) {
         n.statements?.forEach(stmt => {
           if (stmt.kind === ts.SyntaxKind.ExportDeclaration) { // export
             stmt.exportClause.elements.forEach(exp_spec => {
-              const old = exp_spec.propertyName.escapedText; 
+              const old = exp_spec.propertyName.escapedText;
               const nu = exp_spec.name.escapedText;
               const the_item = item.items.find(x => x.name === old);
               if (the_item) {
@@ -152,7 +140,7 @@ function get_dts_item(path_to_dts) {
             });
             return;
           }
-          if (has_deprecated_tag(src, stmt)) {
+          if (ts.getJSDocDeprecatedTag(stmt)) {
             push_deprecated_item(stmt);
             return;
           }
@@ -163,7 +151,7 @@ function get_dts_item(path_to_dts) {
     }
 
     if (ts.isFunctionDeclaration(node)) {
-      if (has_deprecated_tag(src, node)) {
+      if (ts.getJSDocDeprecatedTag(node)) {
         push_deprecated_item(node);
         return;
       }
@@ -180,7 +168,7 @@ function get_dts_item(path_to_dts) {
       }
       console.log(name);
       ts.forEachChild(node, n => {
-        if (has_deprecated_tag(src, n)) {
+        if (ts.getJSDocDeprecatedTag(n)) {
           push_deprecated_item(n);
           return;
         }
