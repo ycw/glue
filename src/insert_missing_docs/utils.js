@@ -24,9 +24,6 @@ const METHOD_PRED = { // yet translated, and translated
 function InsertInfoPrev(el_outerHTML) {
   return { pos: 'beforebegin', el_outerHTML };
 }
-function InsertInfoNext(el_outerHTML) {
-  return { pos: 'afterend', el_outerHTML };
-}
 
 
 
@@ -68,9 +65,17 @@ export function get_insert_info_prop({
   // search for property items
   const siblings = get_next_elem_siblings(el_prop);
 
-  // no property items at all -> insert next to <h2> 
+  // no property items at all -> insert prev to <h2>Methods</h2>
   if (!siblings.length) {
-    return InsertInfoNext(el_prop.outerHTML);
+    // search for <h2>Mehtods</h2>
+    const el_method = Array.from(document.querySelectorAll('h2'))
+      .find(x => METHOD_PRED[lang](x.textContent));
+
+    if (!el_method) {
+      console.log('<h2>Methods</h2> doesnt exist');
+    }
+
+    return InsertInfoPrev(el_method.outerHTML);
   }
 
   // find <h3> the next item wrt prop name in alphabetical order
@@ -80,7 +85,7 @@ export function get_insert_info_prop({
     return m && m[1] > new_prop_name;
   });
 
-  // tail -> prev to <h2>Methods</h2>
+  // tail -> insert prev to <h2>Methods</h2>
   if (!the_sibling) {
     // search for <h2>Mehtods</h2>
     const el_method = Array.from(document.querySelectorAll('h2'))
@@ -152,12 +157,6 @@ export function insert_new_prop({
           html_file.substring(0, i),
           full_text,
           html_file.substring(i)
-        ].join('');
-      } else if (insert_info.pos === 'afterend') {
-        nu_html_file = [
-          html_file.substring(0, idx + insert_info.el_outerHTML.length),
-          full_text,
-          html_file.substring(idx + insert_info.el_outerHTML.length)
         ].join('');
       }
 
