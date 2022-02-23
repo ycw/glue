@@ -10,7 +10,7 @@
   "type": "module",
   "scripts": {
     "serve": "wds --watch --open www/index.html",
-    "build:report": "node src/report/index.js",
+    "build:report": "node src/build_report/index.js",
     "insert:prop_is": "node src/insert_missing_docs/prop_is.js"
   },
   "keywords": [],
