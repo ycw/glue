@@ -10,7 +10,8 @@
   "type": "module",
   "scripts": {
     "serve": "wds --watch --open www/index.html",
-    "build": "node src/index.js"
+    "build": "node src/index.js",
+    "insert:prop_is": "node src/insert_missing_docs/prop_is.js"
   },
   "keywords": [],
   "license": "ISC",
