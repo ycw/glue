@@ -20,7 +20,7 @@
 > npm i
 
 # Build report
-> npm run build
+> npm run build:report
 
 # Browse report
 > npm run serve
