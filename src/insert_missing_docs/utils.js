@@ -113,15 +113,15 @@ export function get_insert_info_prop({
 
 
 
-// @return an idx where str[idx] is finally at a non-wsp char
-// return value might be -1, i.e. str[0 to at-1] are all wsp.
+// keeps stepback until it finds a non-wsp char, then returns the idx. 
+// i.e. `str[idx]` === the non-wsp char terminating the loop.
+// returns -1 when str[0..=at-1] are all wsp chars
 function stepback_wsp(str, at) {
   let i = at - 1;
   while (i >= 0) {
     if (/\s/.test(str[i])) {
       --i;
     } else {
-      ++i;
       break;
     }
   }
