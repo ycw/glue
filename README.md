@@ -41,7 +41,6 @@
 - Exotic docs - non-override heritages
   - cameras/Camera `layers` etc
 - Type tags are undoc 
-  - `is*` [#23527](https://github.com/mrdoob/three.js/issues/23527)
   - `type` (?)
 
 
@@ -57,6 +56,8 @@
   - renderers/WebGLRenderer  `shadowMap.type` etc
 - Exotic docs - dot prefix [#23529](https://github.com/mrdoob/three.js/pull/23529) 
   - textures/DepthTexture `.format` etc
+- Type tags are undoc 
+  - `is*` [#23527](https://github.com/mrdoob/three.js/issues/23527)
 - statics and insts are indistinguishable
   - math/Triangle `getUV` etc
   - math/Quaternion `slerp`
