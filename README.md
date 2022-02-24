@@ -30,7 +30,7 @@
 
 ## Excluded Files
 
-(see `EXCLUDED_DTS` in [report_config.js](https://github.com/ycw/glue/blob/main/src/report_config.js))
+(see `EXCLUDED_DTS` in [report_config.js](https://github.com/ycw/glue/blob/main/src/build_report/report_config.js))
 
 
 
