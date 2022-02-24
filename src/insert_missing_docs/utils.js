@@ -22,7 +22,11 @@ const METHOD_PRED = { // yet translated, and translated
 
 
 function InsertInfoPrev(el_outerHTML) {
-  return { pos: 'beforebegin', el_outerHTML };
+  return { is_insert_before: true, el_outerHTML };
+}
+
+function InsertInfoReplace(el_outerHTML) {
+  return { is_replace: true, el_outerHTML };
 }
 
 
@@ -37,12 +41,6 @@ function get_next_elem_siblings(el) {
   }
   return result;
 }
-
-function get_next_elem_sibling_at(el, at) {
-  return get_next_elem_siblings(el)[at];
-}
-
-
 
 
 export function get_insert_info_prop({
@@ -78,6 +76,17 @@ export function get_insert_info_prop({
     return InsertInfoPrev(el_method.outerHTML);
   }
 
+  // find <h3> having the new prop name -> replace 
+  const el_prop_item = siblings.find(x => {
+    if (x.nodeName !== 'H3') return false;
+    const m = x.textContent.match(/\[property:\S+\s+(\S+)\]/);
+    return m && m[1] === new_prop_name;
+  });
+
+  if (el_prop_item) {
+    return InsertInfoReplace(el_prop_item.outerHTML);
+  }
+
   // find <h3> the next item wrt prop name in alphabetical order
   const the_sibling = siblings.find(x => {
     if (x.nodeName !== 'H3') return false;
@@ -85,7 +94,7 @@ export function get_insert_info_prop({
     return m && m[1] > new_prop_name;
   });
 
-  // tail -> insert prev to <h2>Methods</h2>
+  // tail -> insert prev to next section (<h2>Methods</h2>) 
   if (!the_sibling) {
     // search for <h2>Mehtods</h2>
     const el_method = Array.from(document.querySelectorAll('h2'))
@@ -104,10 +113,28 @@ export function get_insert_info_prop({
 
 
 
+// @return an idx where str[idx] is finally at a non-wsp char
+// return value might be -1, i.e. str[0 to at-1] are all wsp.
+function stepback_wsp(str, at) {
+  let i = at - 1;
+  while (i >= 0) {
+    if (/\s/.test(str[i])) {
+      --i;
+    } else {
+      ++i;
+      break;
+    }
+  }
+  return i;
+}
+
+
+
 export function insert_new_prop({
   docs_list = [],
   new_prop_name_fn,
-  new_full_text_fn
+  new_full_text_fn,
+  is_replace = false // true -> will overwrite all translated text in non en docs
 }) {
   for (const relpath_to_docs of docs_list) {
     console.group(relpath_to_docs)
@@ -137,22 +164,31 @@ export function insert_new_prop({
       }
 
       let nu_html_file = '';
-      if (insert_info.pos === 'beforebegin') {
-        // consume whitespaces
-        let i = idx - 1;
-        while (true) {
-          if (/\s/.test(html_file[i])) {
-            --i;
-          } else {
-            ++i;
-            break;
-          }
-          if (i < 0) {
-            i = 0;
-            break;
-          }
-        }
 
+      if (insert_info.is_replace) {
+        if (is_replace) {
+          const re = /<h[23]/ig; // <h2 or <h3 
+          re.lastIndex = idx + insert_info.el_outerHTML.length; // skip self
+          const exec = re.exec(html_file);
+          const start_idx = stepback_wsp(html_file, idx) + 1; // includes leading wsp
+          const end_idx = stepback_wsp(
+            html_file,
+            re.lastIndex - (exec ? exec[0].length : 0)
+          ) + 1; // excludes trailing wsp
+
+          nu_html_file = [
+            html_file.substring(0, start_idx),
+            full_text,
+            html_file.substring(end_idx)
+          ].join('');
+        } else {
+          console.log('skipped'); // =prop exists and disallow replace
+          nu_html_file = html_file;
+        }
+      }
+
+      if (insert_info.is_insert_before) {
+        const i = stepback_wsp(html_file, idx);
         nu_html_file = [
           html_file.substring(0, i),
           full_text,
