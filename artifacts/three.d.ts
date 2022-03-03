@@ -191,6 +191,8 @@ declare module 'three/src/Three' {
     export * from 'three/src/renderers/WebGLRenderTarget';
     export * from 'three/src/renderers/WebGLRenderer';
     export * from 'three/src/renderers/WebGL1Renderer';
+    export * from 'three/src/renderers/WebGL3DRenderTarget';
+    export * from 'three/src/renderers/WebGLArrayRenderTarget';
     export * from 'three/src/renderers/shaders/ShaderLib';
     export * from 'three/src/renderers/shaders/UniformsLib';
     export * from 'three/src/renderers/shaders/UniformsUtils';
@@ -232,9 +234,12 @@ declare module 'three/src/Three' {
     export * from 'three/src/textures/DataTexture3D';
     export * from 'three/src/textures/CompressedTexture';
     export * from 'three/src/textures/CubeTexture';
+    export * from 'three/src/textures/Data3DTexture';
+    export * from 'three/src/textures/DataArrayTexture';
     export * from 'three/src/textures/CanvasTexture';
     export * from 'three/src/textures/DepthTexture';
     export * from 'three/src/textures/FramebufferTexture';
+    export * from 'three/src/textures/Source';
     export * from 'three/src/textures/Texture';
 }
 
@@ -373,6 +378,7 @@ declare module 'three/src/constants' {
     
     export enum PixelFormat {}
     export const AlphaFormat: PixelFormat;
+    export const RGBFormat: PixelFormat;
     export const RGBAFormat: PixelFormat;
     export const LuminanceFormat: PixelFormat;
     export const LuminanceAlphaFormat: PixelFormat;
@@ -509,8 +515,6 @@ declare module 'three/src/constants' {
     export const LinearEncoding: TextureEncoding;
     export const sRGBEncoding: TextureEncoding;
     export const LogLuvEncoding: TextureEncoding;
-    export const RGBM7Encoding: TextureEncoding;
-    export const RGBM16Encoding: TextureEncoding;
     
     export enum DepthPackingStrategies {}
     export const BasicDepthPacking: DepthPackingStrategies;
@@ -2096,6 +2100,7 @@ declare module 'three/src/core/Raycaster' {
             faceIndex?: number | undefined;
             object: TIntersected;
             uv?: Vector2 | undefined;
+            uv2?: Vector2 | undefined;
             instanceId?: number | undefined;
     }
     export interface RaycasterParameters {
@@ -2434,6 +2439,7 @@ declare module 'three/src/extras/PMREMGenerator' {
 
 declare module 'three/src/geometries/Geometries' {
     export * from 'three/src/geometries/BoxGeometry';
+    export * from 'three/src/geometries/CapsuleGeometry';
     export * from 'three/src/geometries/CircleGeometry';
     export * from 'three/src/geometries/ConeGeometry';
     export * from 'three/src/geometries/CylinderGeometry';
@@ -4188,10 +4194,6 @@ declare module 'three/src/math/Euler' {
             /**
                 * @internal
                 */
-            toVector3(optionalResult?: Vector3): Vector3;
-            /**
-                * @internal
-                */
             _onChange(callback: () => void): this;
             /**
                 * @internal
@@ -4390,6 +4392,7 @@ declare module 'three/src/math/Vector3' {
             setFromMatrixScale(m: Matrix4): this;
             setFromMatrixColumn(matrix: Matrix4, index: number): this;
             setFromMatrix3Column(matrix: Matrix3, index: number): this;
+            setFromEuler(e: Euler): this;
             equals(v: Vector3): boolean;
             fromArray(array: number[] | ArrayLike<number>, offset?: number): this;
             toArray(array?: number[], offset?: number): number[];
@@ -4566,9 +4569,6 @@ declare module 'three/src/math/Quaternion' {
                 */
             _onChangeCallback: () => void;
             static slerpFlat(dst: number[], dstOffset: number, src0: number[], srcOffset: number, src1: number[], stcOffset1: number, t: number): Quaternion;
-            /**
-                * @internal
-                */
             static multiplyQuaternionsFlat(dst: number[], dstOffset: number, src0: number[], srcOffset: number, src1: number[], stcOffset1: number): number[];
             static slerp(qa: Quaternion, qb: Quaternion, qm: Quaternion, t: number): number;
             /**
@@ -4978,21 +4978,11 @@ declare module 'three/src/objects/Group' {
 }
 
 declare module 'three/src/renderers/WebGLMultisampleRenderTarget' {
-    import { WebGLRenderTarget, WebGLRenderTargetOptions } from 'three/src/renderers/WebGLRenderTarget';
+    import { WebGLRenderTarget } from 'three/src/renderers/WebGLRenderTarget';
     /**
-        * @internal
-        */
+      * @deprecated THREE.WebGLMultisampleRenderTarget has been removed. Use a normal render target and set the "samples" property to greater 0 to enable multisampling.
+      */
     export class WebGLMultisampleRenderTarget extends WebGLRenderTarget {
-            constructor(width: number, height: number, options?: WebGLRenderTargetOptions);
-            /**
-                * @internal
-                */
-            readonly isWebGLMultisampleRenderTarget: true;
-            /**
-                * @default 4
-                * @internal
-                */
-            samples: number;
     }
 }
 
@@ -5015,10 +5005,11 @@ declare module 'three/src/renderers/WebGLCubeRenderTarget' {
 declare module 'three/src/renderers/WebGLMultipleRenderTargets' {
     import { EventDispatcher } from 'three/src/core/EventDispatcher';
     import { Texture } from 'three/src/textures/Texture';
+    import { WebGLRenderTargetOptions } from 'three/src/renderers/WebGLRenderTarget';
     export class WebGLMultipleRenderTargets extends EventDispatcher {
             texture: Texture[];
             readonly isWebGLMultipleRenderTargets = true;
-            constructor(width: number, height: number, count: number);
+            constructor(width: number, height: number, count: number, options?: WebGLRenderTargetOptions);
             /**
                 * @internal
                 */
@@ -5093,6 +5084,10 @@ declare module 'three/src/renderers/WebGLRenderTarget' {
                 * @default null
                 */
             depthTexture: DepthTexture;
+            /**
+                * @default 0
+                */
+            samples: number;
             readonly isWebGLRenderTarget: true;
             /**
                 * @deprecated Use texture.wrapS instead.
@@ -5134,10 +5129,6 @@ declare module 'three/src/renderers/WebGLRenderTarget' {
                 * @deprecated Use texture.generateMipmaps instead.
                 */
             generateMipmaps: any;
-            /**
-                * @internal
-                */
-            setTexture(texture: Texture): void;
             setSize(width: number, height: number, depth?: number): void;
             clone(): this;
             copy(source: WebGLRenderTarget): this;
@@ -5153,7 +5144,6 @@ declare module 'three/src/renderers/WebGLRenderer' {
     import { WebGLShadowMap } from 'three/src/renderers/webgl/WebGLShadowMap';
     import { WebGLCapabilities } from 'three/src/renderers/webgl/WebGLCapabilities';
     import { WebGLProperties } from 'three/src/renderers/webgl/WebGLProperties';
-    import { WebGLProgram } from 'three/src/renderers/webgl/WebGLProgram';
     import { WebGLRenderLists } from 'three/src/renderers/webgl/WebGLRenderLists';
     import { WebGLState } from 'three/src/renderers/webgl/WebGLState';
     import { Vector2 } from 'three/src/math/Vector2';
@@ -5167,11 +5157,11 @@ declare module 'three/src/renderers/WebGLRenderer' {
     import { WebXRManager } from 'three/src/renderers/webxr/WebXRManager';
     import { BufferGeometry } from 'three/src/core/BufferGeometry';
     import { Texture } from 'three/src/textures/Texture';
-    import { DataTexture3D } from 'three/src/textures/DataTexture3D';
+    import { Data3DTexture } from 'three/src/textures/Data3DTexture';
     import { XRAnimationLoopCallback } from 'three/src/renderers/webxr/WebXR';
     import { Vector3 } from 'three/src/math/Vector3';
     import { Box3 } from 'three/src/math/Box3';
-    import { DataTexture2DArray } from 'three/src/textures/DataTexture2DArray';
+    import { DataArrayTexture } from 'three/src/textures/DataArrayTexture';
     import { ColorRepresentation } from 'three/src/utils';
     export interface Renderer {
             domElement: HTMLCanvasElement;
@@ -5336,7 +5326,7 @@ declare module 'three/src/renderers/WebGLRenderer' {
             readRenderTargetPixels(renderTarget: WebGLRenderTarget | WebGLMultipleRenderTargets, x: number, y: number, width: number, height: number, buffer: any, activeCubeFaceIndex?: number): void;
             copyFramebufferToTexture(position: Vector2, texture: Texture, level?: number): void;
             copyTextureToTexture(position: Vector2, srcTexture: Texture, dstTexture: Texture, level?: number): void;
-            copyTextureToTexture3D(sourceBox: Box3, position: Vector3, srcTexture: Texture, dstTexture: DataTexture3D | DataTexture2DArray, level?: number): void;
+            copyTextureToTexture3D(sourceBox: Box3, position: Vector3, srcTexture: Texture, dstTexture: Data3DTexture | DataArrayTexture, level?: number): void;
             initTexture(texture: Texture): void;
             resetState(): void;
             /**
@@ -5399,6 +5389,34 @@ declare module 'three/src/renderers/WebGL1Renderer' {
     export class WebGL1Renderer extends WebGLRenderer {
         constructor(parameters?: WebGLRendererParameters);
         readonly isWebGL1Renderer: true;
+    }
+}
+
+declare module 'three/src/renderers/WebGL3DRenderTarget' {
+    import { Data3DTexture } from 'three/src/textures/Data3DTexture';
+    import { WebGLRenderTarget } from 'three/src/renderers/WebGLRenderTarget';
+    export class WebGL3DRenderTarget extends WebGLRenderTarget {
+        constructor(width: number, height: number, depth: number);
+        depth: number;
+        texture: Data3DTexture;
+        /**
+          * @internal
+          */
+        readonly isWebGL3DRenderTarget: true;
+    }
+}
+
+declare module 'three/src/renderers/WebGLArrayRenderTarget' {
+    import { DataArrayTexture } from 'three/src/textures/DataArrayTexture';
+    import { WebGLRenderTarget } from 'three/src/renderers/WebGLRenderTarget';
+    export class WebGLArrayRenderTarget extends WebGLRenderTarget {
+        constructor(width: number, height: number, depth: number);
+        depth: number;
+        texture: DataArrayTexture;
+        /**
+          * @internal
+          */
+        readonly isWebGLArrayRenderTarget: true;
     }
 }
 
@@ -6676,7 +6694,7 @@ declare module 'three/src/renderers/webxr/WebXRManager' {
             /**
                 * @internal
                 */
-            setAnimationLoop(callback: XRFrameRequestCallback): void;
+            setAnimationLoop(callback: XRFrameRequestCallback | null): void;
             getFoveation(): number | undefined;
             setFoveation(foveation: number): void;
             /**
@@ -6801,7 +6819,8 @@ declare module 'three/src/textures/DataTexture' {
     import { Mapping, Wrapping, TextureFilter, PixelFormat, TextureDataType, TextureEncoding } from 'three/src/constants';
     export class DataTexture extends Texture {
             constructor(data?: BufferSource | null, width?: number, height?: number, format?: PixelFormat, type?: TextureDataType, mapping?: Mapping, wrapS?: Wrapping, wrapT?: Wrapping, magFilter?: TextureFilter, minFilter?: TextureFilter, anisotropy?: number, encoding?: TextureEncoding);
-            image: ImageData;
+            get image(): ImageData;
+            set image(value: ImageData);
             /**
                 * @default false
                 */
@@ -6824,82 +6843,20 @@ declare module 'three/src/textures/DataTexture' {
 }
 
 declare module 'three/src/textures/DataTexture2DArray' {
-    import { Texture } from 'three/src/textures/Texture';
-    import { TextureFilter } from 'three/src/constants';
+    import { DataArrayTexture } from 'three/src/textures/DataArrayTexture';
     /**
-        * @internal
-        */
-    export class DataTexture2DArray extends Texture {
-            constructor(data?: BufferSource, width?: number, height?: number, depth?: number);
-            /**
-                * @default THREE.NearestFilter
-                * @internal
-                */
-            magFilter: TextureFilter;
-            /**
-                * @default THREE.NearestFilter
-                * @internal
-                */
-            minFilter: TextureFilter;
-            /**
-                * @default THREE.ClampToEdgeWrapping
-                * @internal
-                */
-            wrapR: boolean;
-            /**
-                * @default false
-                * @internal
-                */
-            flipY: boolean;
-            /**
-                * @default false
-                * @internal
-                */
-            generateMipmaps: boolean;
-            /**
-                * @internal
-                */
-            readonly isDataTexture2DArray: true;
+      * @deprecated THREE.DataTexture2DArray has been renamed to DataArrayTexture.
+      */
+    export class DataTexture2DArray extends DataArrayTexture {
     }
 }
 
 declare module 'three/src/textures/DataTexture3D' {
-    import { Texture } from 'three/src/textures/Texture';
-    import { TextureFilter } from 'three/src/constants';
+    import { Data3DTexture } from 'three/src/textures/Data3DTexture';
     /**
-        * @internal
-        */
-    export class DataTexture3D extends Texture {
-            constructor(data: BufferSource, width: number, height: number, depth: number);
-            /**
-                * @default THREE.NearestFilter
-                * @internal
-                */
-            magFilter: TextureFilter;
-            /**
-                * @default THREE.NearestFilter
-                * @internal
-                */
-            minFilter: TextureFilter;
-            /**
-                * @default THREE.ClampToEdgeWrapping
-                * @internal
-                */
-            wrapR: boolean;
-            /**
-                * @default false
-                * @internal
-                */
-            flipY: boolean;
-            /**
-                * @default false
-                * @internal
-                */
-            generateMipmaps: boolean;
-            /**
-                * @internal
-                */
-            readonly isDataTexture3D: true;
+      * @deprecated THREE.DataTexture3D has been renamed to Data3DTexture.
+      */
+    export class DataTexture3D extends Data3DTexture {
     }
 }
 
@@ -6908,13 +6865,14 @@ declare module 'three/src/textures/CompressedTexture' {
     import { Mapping, Wrapping, TextureFilter, CompressedPixelFormat, TextureDataType, TextureEncoding, } from 'three/src/constants';
     export class CompressedTexture extends Texture {
             constructor(mipmaps: ImageData[], width: number, height: number, format?: CompressedPixelFormat, type?: TextureDataType, mapping?: Mapping, wrapS?: Wrapping, wrapT?: Wrapping, magFilter?: TextureFilter, minFilter?: TextureFilter, anisotropy?: number, encoding?: TextureEncoding);
-            /**
-                * @internal
-                */
-            image: {
+            get image(): {
                     width: number;
                     height: number;
             };
+            set image(value: {
+                    width: number;
+                    height: number;
+            });
             /**
                 * @internal
                 */
@@ -6948,6 +6906,79 @@ declare module 'three/src/textures/CubeTexture' {
     }
 }
 
+declare module 'three/src/textures/Data3DTexture' {
+    import { Texture } from 'three/src/textures/Texture';
+    import { TextureFilter } from 'three/src/constants';
+    export class Data3DTexture extends Texture {
+            constructor(data: BufferSource, width: number, height: number, depth: number);
+            /**
+                * @default THREE.NearestFilter
+                * @internal
+                */
+            magFilter: TextureFilter;
+            /**
+                * @default THREE.NearestFilter
+                * @internal
+                */
+            minFilter: TextureFilter;
+            /**
+                * @default THREE.ClampToEdgeWrapping
+                */
+            wrapR: boolean;
+            /**
+                * @default false
+                * @internal
+                */
+            flipY: boolean;
+            /**
+                * @default false
+                * @internal
+                */
+            generateMipmaps: boolean;
+            /**
+                * @internal
+                */
+            readonly isData3DTexture: true;
+    }
+}
+
+declare module 'three/src/textures/DataArrayTexture' {
+    import { Texture } from 'three/src/textures/Texture';
+    import { TextureFilter } from 'three/src/constants';
+    export class DataArrayTexture extends Texture {
+            constructor(data?: BufferSource, width?: number, height?: number, depth?: number);
+            /**
+                * @default THREE.NearestFilter
+                * @internal
+                */
+            magFilter: TextureFilter;
+            /**
+                * @default THREE.NearestFilter
+                * @internal
+                */
+            minFilter: TextureFilter;
+            /**
+                * @default THREE.ClampToEdgeWrapping
+                * @internal
+                */
+            wrapR: boolean;
+            /**
+                * @default false
+                * @internal
+                */
+            flipY: boolean;
+            /**
+                * @default false
+                * @internal
+                */
+            generateMipmaps: boolean;
+            /**
+                * @internal
+                */
+            readonly isDataArrayTexture: true;
+    }
+}
+
 declare module 'three/src/textures/CanvasTexture' {
     import { Texture } from 'three/src/textures/Texture';
     import { Mapping, Wrapping, TextureFilter, PixelFormat, TextureDataType } from 'three/src/constants';
@@ -6962,13 +6993,14 @@ declare module 'three/src/textures/DepthTexture' {
     import { Mapping, Wrapping, TextureFilter, TextureDataType } from 'three/src/constants';
     export class DepthTexture extends Texture {
             constructor(width: number, height: number, type?: TextureDataType, mapping?: Mapping, wrapS?: Wrapping, wrapT?: Wrapping, magFilter?: TextureFilter, minFilter?: TextureFilter, anisotropy?: number);
-            /**
-                * @internal
-                */
-            image: {
+            get image(): {
                     width: number;
                     height: number;
             };
+            set image(value: {
+                    width: number;
+                    height: number;
+            });
             /**
                 * @default false
                 */
@@ -6991,9 +7023,25 @@ declare module 'three/src/textures/FramebufferTexture' {
     }
 }
 
+declare module 'three/src/textures/Source' {
+    export class Source {
+        constructor(data: any);
+        data: any;
+        set needsUpdate(value: boolean);
+        uuid: string;
+        version: number;
+        toJSON(meta: any): any;
+        /**
+          * @internal
+          */
+        readonly isTexture: true;
+    }
+}
+
 declare module 'three/src/textures/Texture' {
     import { Vector2 } from 'three/src/math/Vector2';
     import { Matrix3 } from 'three/src/math/Matrix3';
+    import { Source } from 'three/src/textures/Source';
     import { EventDispatcher } from 'three/src/core/EventDispatcher';
     import { Mapping, Wrapping, TextureFilter, PixelFormat, PixelFormatGPU, TextureDataType, TextureEncoding, } from 'three/src/constants';
     export class Texture extends EventDispatcher {
@@ -7008,10 +7056,9 @@ declare module 'three/src/textures/Texture' {
                 * @internal
                 */
             sourceFile: string;
-            /**
-                * @default THREE.Texture.DEFAULT_IMAGE
-                */
-            image: any;
+            source: Source;
+            get image(): any;
+            set image(data: any);
             /**
                 * @default []
                 */
@@ -7099,6 +7146,11 @@ declare module 'three/src/textures/Texture' {
                 */
             isRenderTargetTexture: boolean;
             /**
+                * @default false
+                * @internal
+                */
+            needsPMREMUpdate: boolean;
+            /**
                 * @default {}
                 */
             userData: any;
@@ -7106,7 +7158,7 @@ declare module 'three/src/textures/Texture' {
                 * @default 0
                 */
             version: number;
-            needsUpdate: boolean;
+            set needsUpdate(value: boolean);
             readonly isTexture: true;
             onUpdate: () => void;
             /**
@@ -7192,11 +7244,6 @@ declare module 'three/src/materials/Material' {
                 * @default false
                 */
             alphaToCoverage: boolean;
-            /**
-                * @default false
-                * @internal
-                */
-            alphaWrite: boolean;
             /**
                 * @default THREE.OneMinusSrcAlphaFactor
                 */
@@ -7665,6 +7712,29 @@ declare module 'three/src/geometries/BoxGeometry' {
             static fromJSON(data: any): BoxGeometry;
     }
     export { BoxGeometry as BoxBufferGeometry };
+}
+
+declare module 'three/src/geometries/CapsuleGeometry' {
+    import { BufferGeometry } from 'three/src/core/BufferGeometry';
+    export class CapsuleGeometry extends BufferGeometry {
+            constructor(radius?: number, length?: number, capSegments?: number, radialSegments?: number);
+            /**
+                * @default 'CapsuleGeometry'
+                * @internal
+                */
+            type: string;
+            parameters: {
+                    radius: number;
+                    length: number;
+                    capSegments: number;
+                    radialSegments: number;
+            };
+            /**
+                * @internal
+                */
+            static fromJSON(data: any): CapsuleGeometry;
+    }
+    export { CapsuleGeometry as CapsuleBufferGeometry };
 }
 
 declare module 'three/src/geometries/CircleGeometry' {
