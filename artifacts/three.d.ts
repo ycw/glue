@@ -8799,6 +8799,7 @@ declare module 'three/src/materials/MeshStandardMaterial' {
             envMapIntensity: number;
             /**
                 * @default 0.98
+                * @internal
                 */
             refractionRatio: number;
             /**
